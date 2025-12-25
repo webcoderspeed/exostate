@@ -207,7 +207,7 @@ const ensureConsistency = (): void => {
   // Fix any inconsistencies
   if (!validateEmail(state.email)) {
     console.log('Fixing inconsistent email');
-    userStore.update((prev, email: string) => ({
+    userStore.update((prev) => ({
       ...prev,
       email: 'recovered@example.com'
     }), 'recovered@example.com');
@@ -215,7 +215,7 @@ const ensureConsistency = (): void => {
   
   if (!validateAge(state.age)) {
     console.log('Fixing inconsistent age');
-    userStore.update((prev, age: number) => ({
+    userStore.update((prev) => ({
       ...prev,
       age: 25
     }), 25);
@@ -223,7 +223,7 @@ const ensureConsistency = (): void => {
   
   if (!validateUsername(state.username)) {
     console.log('Fixing inconsistent username');
-    userStore.update((prev, username: string) => ({
+    userStore.update((prev) => ({
       ...prev,
       username: 'recovered_user'
     }), 'recovered_user');

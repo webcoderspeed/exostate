@@ -10,80 +10,95 @@ export interface Store<T> extends State<T> {
   effect<P>(fn: Effect<T, P>, payload: P): void | Promise<void>
 }
 
+export class StoreImpl<T> implements Store<T> {
+  version = 0
+  listeners = new Set<() => void>()
+
+  constructor(public current: T) {}
+
+  read() {
+    return this.current
+  }
+
+  snapshot() {
+    return this.current as DeepReadonly<T>
+  }
+
+  update<P>(reducer: Reducer<T, P>, payload: P) {
+    const next = reducer(this.current as DeepReadonly<T>, payload)
+    this.current = next
+    this.version += 1
+    if (this.listeners.size > 0) this.notifyListeners()
+    return this.current
+  }
+
+  set(next: T) {
+    this.current = next
+    this.version += 1
+    if (this.listeners.size > 0) this.notifyListeners()
+    return this.current
+  }
+
+  compute(fn: Compute<T>) {
+    const next = fn(this.current as DeepReadonly<T>)
+    this.current = next
+    this.version += 1
+    if (this.listeners.size > 0) this.notifyListeners()
+    return this.current
+  }
+
+  batch(apply: (apply: <P>(reducer: Reducer<T, P>, payload: P) => void) => void) {
+    let next = this.current
+    const applier = <P>(reducer: Reducer<T, P>, payload: P) => {
+      next = reducer(next as DeepReadonly<T>, payload)
+    }
+    apply(applier)
+    this.current = next
+    this.version += 1
+    if (this.listeners.size > 0) this.notifyListeners()
+    return this.current
+  }
+
+  effect<P>(fn: Effect<T, P>, payload: P) {
+    return fn(this.current as DeepReadonly<T>, payload)
+  }
+
+  subscribe<R>(selector: Selector<T, R>, subscriber: Subscriber<R>, options?: SubscribeOptions<R>) {
+    const eq: Equality<R> = options?.eq || Object.is
+    let prev = selector(this.current as DeepReadonly<T>)
+    if (options?.fireImmediately) subscriber(prev)
+    
+    // Optimize: flatten notify logic to reduce closure/stack depth
+    const notify = () => {
+      const next = selector(this.current as DeepReadonly<T>)
+      if (!eq(prev, next)) {
+        prev = next
+        subscriber(next)
+      }
+    }
+    
+    // Copy-on-write add (Set)
+    const nextListeners = new Set(this.listeners)
+    nextListeners.add(notify)
+    this.listeners = nextListeners
+    
+    const unsubscribe: Unsubscribe = () => {
+      if (this.listeners.has(notify)) {
+        // Copy-on-write remove (Set)
+        const next = new Set(this.listeners)
+        next.delete(notify)
+        this.listeners = next
+      }
+    }
+    
+    return unsubscribe
+  }
+
+  private notifyListeners() {
+    for (const notify of this.listeners) notify()
+  }
+}
+
 export function createStore<T>(initial: T): Store<T> {
-  let current = initial
-  let version = 0
-  const listeners: Array<() => void> = []
-  
-  function notifyListeners() {
-    for (const notify of listeners) notify()
-  }
-  
-  return {
-    get version() {
-      return version
-    },
-    read() {
-      return current
-    },
-    snapshot() {
-      return current as DeepReadonly<T>
-    },
-    update<P>(reducer: Reducer<T, P>, payload: P) {
-      const next = reducer(current as DeepReadonly<T>, payload)
-      current = next
-      version += 1
-      notifyListeners()
-      return current
-    },
-    set(next: T) {
-      current = next
-      version += 1
-      notifyListeners()
-      return current
-    },
-    compute(fn: Compute<T>) {
-      const next = fn(current as DeepReadonly<T>)
-      current = next
-      version += 1
-      notifyListeners()
-      return current
-    },
-    batch(apply: (apply: <P>(reducer: Reducer<T, P>, payload: P) => void) => void) {
-      let next = current
-      const applier = <P>(reducer: Reducer<T, P>, payload: P) => {
-        next = reducer(next as DeepReadonly<T>, payload)
-      }
-      apply(applier)
-      current = next
-      version += 1
-      notifyListeners()
-      return current
-    },
-    effect<P>(fn: Effect<T, P>, payload: P) {
-      return fn(current as DeepReadonly<T>, payload)
-    },
-    subscribe<R>(selector: Selector<T, R>, subscriber: Subscriber<R>, options?: SubscribeOptions<R>) {
-      const eq: Equality<R> = options?.eq ?? Object.is
-      let prev = selector(current as DeepReadonly<T>)
-      if (options?.fireImmediately) subscriber(prev)
-      
-      const notify = () => {
-        const next = selector(current as DeepReadonly<T>)
-        if (!eq(prev, next)) {
-          prev = next
-          subscriber(next)
-        }
-      }
-      
-      listeners.push(notify)
-      
-      const unsubscribe: Unsubscribe = () => {
-        const idx = listeners.indexOf(notify)
-        if (idx >= 0) listeners.splice(idx, 1)
-      }
-      
-      return unsubscribe
-    },
-  }
+  return new StoreImpl(initial)
 }

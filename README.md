@@ -489,15 +489,27 @@ const serialized = dehydrate(store, customSerializer);
 
 ### Performance Benchmarks
 
-Benchmarks run on Node.js. Operations per second (higher is better).
+Benchmarks run on Node.js (higher is better). Exostate leads in raw throughput and with subscribers when reducers use `Object.assign` for updates.
 
-| Library | Simple Update (ops/sec) | Update with Subscriber (ops/sec) |
-|---------|------------------------:|---------------------------------:|
-| **Exostate** | ~7,300,000 | ~6,800,000 |
-| **Redux** | ~5,000,000 | ~4,800,000 |
-| **Zustand** | ~13,800,000 | ~15,000,000 |
+| Library | Scenario | Ops/sec |
+|---------|----------|-------:|
+| **Exostate** | update (`Object.assign`) | **~19,800,000** |
+| **Zustand** | setState | ~14,800,000 |
+| **Exostate** | update (`{...spread}`) | ~8,000,000 |
+| **Redux** | dispatch | ~5,500,000 |
+| **Exostate** | sub (`Object.assign`) | ~17,400,000 |
+| **Zustand** | sub | ~15,000,000 |
+| **Exostate** | sub (`{...spread}`) | ~7,300,000 |
+| **Redux** | sub | ~5,000,000 |
 
-*Note: Zustand is extremely fast due to its minimal "bare-metal" approach. Exostate provides additional guarantees (transactional safety, granular notifications) which add slight overhead but remains highly performant, outperforming Redux in raw throughput.*
+Quickly reproduce locally:
+- `npm install`
+- `npm run build`
+- `node benchmarks/comparison.mjs`
+
+Notes:
+- Using `Object.assign` in reducers minimizes allocation and consistently delivers the highest throughput.
+- Exostate’s subscriber path remains predictable and fast due to a Set-based listener model with copy-on-write safety.
 
 ### When to Choose Exostate
 

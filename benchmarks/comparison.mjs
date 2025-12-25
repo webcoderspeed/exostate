@@ -59,6 +59,10 @@ function runBenchmarks() {
   results.push(bench('Exostate (update)', iterations, () => {
     exStore.update((s, n) => ({ ...s, count: s.count + n }), 1)
   }))
+
+  results.push(bench('Exostate (assign)', iterations, () => {
+    exStore.update((s, n) => Object.assign({}, s, { count: s.count + n }), 1)
+  }))
   
   results.push(bench('Redux (dispatch)', iterations, () => {
     reduxStore.dispatch({ type: 'INC', payload: 1 })
@@ -86,6 +90,10 @@ function runBenchmarks() {
 
   results.push(bench('Exostate (sub)', iterations, () => {
     exStoreSub.update((s, n) => ({ ...s, count: s.count + n }), 1)
+  }))
+
+  results.push(bench('Exostate (sub-assign)', iterations, () => {
+    exStoreSub.update((s, n) => Object.assign({}, s, { count: s.count + n }), 1)
   }))
   
   results.push(bench('Redux (sub)', iterations, () => {
