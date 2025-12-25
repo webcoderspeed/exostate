@@ -1,0 +1,29 @@
+# exostate — TODO Plan
+
+- [x] Define core state abstraction
+- [x] Design generic type model
+- [x] Define mutation/update semantics
+- [x] Define subscription/observer model
+- [x] Ensure backend-safe execution
+- [x] Validate strict TypeScript compatibility
+- [x] Define public API surface
+- [x] Write minimal usage examples
+- [x] Add snapshot API
+- [x] Add compute and batch update APIs
+- [x] Add typed effect API
+- [x] Add derived selector utility
+- [x] Add unit tests for store, selectors, batch
+- [x] Add property-based tests for reducers
+- [x] Add benchmarking suite and performance dashboard
+- [x] Add time-travel and history utilities
+- [x] Add persistence adapters (filesystem, localStorage)
+- [x] Add serialization with versioning and migrations
+- [x] Add transaction scopes with rollback
+- [x] Add middleware API for logging/metrics
+- [x] Add devtools adapter protocol
+- [x] Add React hook adapter package
+- [x] Add SSR hydration and rehydration helpers
+- [x] Add multi-store composition utilities
+- [x] Add typed error policy and safe errors
+- [x] Add schema validation integration (zod optional)
+- [x] Add docs site scaffold and quickstart
