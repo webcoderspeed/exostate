@@ -487,6 +487,18 @@ const serialized = dehydrate(store, customSerializer);
 | **Learning Curve** | 🟡 Moderate | 🔴 Steep |
 | **Bundle Size** | 🟢 Small (~3kB) | 🔴 Large (~10kB+) |
 
+### Performance Benchmarks
+
+Benchmarks run on Node.js. Operations per second (higher is better).
+
+| Library | Simple Update (ops/sec) | Update with Subscriber (ops/sec) |
+|---------|------------------------:|---------------------------------:|
+| **Exostate** | ~7,300,000 | ~6,800,000 |
+| **Redux** | ~5,000,000 | ~4,800,000 |
+| **Zustand** | ~13,800,000 | ~15,000,000 |
+
+*Note: Zustand is extremely fast due to its minimal "bare-metal" approach. Exostate provides additional guarantees (transactional safety, granular notifications) which add slight overhead but remains highly performant, outperforming Redux in raw throughput.*
+
 ### When to Choose Exostate
 
 - **✅ Complex state logic** with multiple dependent updates
