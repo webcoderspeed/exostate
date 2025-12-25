@@ -1,6 +1,6 @@
 {
   "name": "exostate",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Next-generation, fully type-safe state management for frontend and backend.",
   "type": "module",
   "main": "./dist/index.js",
@@ -37,7 +37,19 @@
     "immutable",
     "generic"
   ],
-  "author": "",
+  "author": "webcoderspeed",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/webcoderspeed/exostate.git"
+  },
+  "bugs": {
+    "url": "https://github.com/webcoderspeed/exostate/issues"
+  },
+  "homepage": "https://github.com/webcoderspeed/exostate#readme",
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/webcoderspeed"
+  },
   "license": "MIT",
   "engines": {
     "node": ">=18"
