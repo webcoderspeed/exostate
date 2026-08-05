@@ -152,6 +152,21 @@ version from commit history, updates `CHANGELOG.md`, publishes to npm with
 provenance, and creates a GitHub release. Maintainers never bump versions by
 hand.
 
+**Authentication uses npm [trusted publishing](https://docs.npmjs.com/trusted-publishers)
+(OIDC) — there is no `NPM_TOKEN` secret.** The release job requests an OIDC
+token via `id-token: write` and exchanges it with the registry, so no
+long-lived credential exists to leak or rotate. Two things this depends on:
+
+- A trusted publisher must be configured for the package on npmjs.com, bound to
+  this repository and workflow file. Without it the exchange fails with
+  `404 OIDC token exchange error - package not found`.
+- npm >= 11.5.1 is required. Node 22 ships npm 10.x, so the workflow runs
+  `npm install -g npm@latest` before publishing.
+
+The next version is derived from git tags, not from the registry. If tags are
+ever lost, recreate the baseline tag at the commit the last release was
+published from — the npm registry records it as `gitHead` on each version.
+
 ## Reporting bugs
 
 Open an issue with the [bug report template](https://github.com/webcoderspeed/exostate/issues/new?template=bug_report.yml).
