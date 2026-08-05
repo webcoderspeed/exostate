@@ -12,3 +12,8 @@ coverage/
 .vscode/
 .idea/
 
+
+.size/
+release/
+coverage/
+pack/

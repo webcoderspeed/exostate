@@ -1,0 +1,87 @@
+name: 🐛 Bug Report
+description: Report something that behaves incorrectly
+title: '[Bug]: '
+labels: ['bug', 'needs-triage']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report. A minimal reproduction
+        is by far the most useful thing you can include.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the bug and what you expected instead.
+      placeholder: Calling `store.patch()` inside a subscriber notified listeners twice…
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: The smallest code snippet that shows the problem.
+      render: typescript
+      placeholder: |
+        import { createStore } from 'exostate'
+
+        const store = createStore({ count: 0 })
+        // …
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part of Exostate?
+      multiple: true
+      options:
+        - Core store (createStore, patch, subscribe)
+        - Query layer (QueryClient, useQuery, mutations)
+        - React adapter
+        - Vue adapter
+        - Svelte adapter
+        - Solid adapter
+        - Persistence (localStorage / IndexedDB / filesystem)
+        - History / time travel
+        - Plugins / middleware / devtools
+        - Types / TypeScript inference
+        - SSR / hydration
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Exostate version
+      placeholder: 1.2.0
+    validations:
+      required: true
+
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Runtime, framework version, bundler, OS.
+      placeholder: Node 22, React 18.3, Vite 5, macOS 15
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs or stack trace
+      render: shell
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and this is not a duplicate
+          required: true
+        - label: I am using a supported version of Exostate
+          required: true

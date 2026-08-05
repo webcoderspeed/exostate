@@ -1,6 +1,6 @@
-import { Store } from "./store"
-import { DeepReadonly } from "./types"
-import { Serializer } from "./serialize"
+import { Store } from "./store.js"
+import { DeepReadonly } from "./types.js"
+import { Serializer } from "./serialize.js"
 
 export function dehydrate<T>(store: Store<T>, serializer?: Serializer<T>): string {
   const snap = store.snapshot() as DeepReadonly<T>

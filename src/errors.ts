@@ -11,6 +11,7 @@ export class SafeError extends Error {
   readonly details?: unknown
   constructor(data: SafeErrorData) {
     super(data.message)
+    this.name = 'SafeError'
     this.code = data.code
     this.details = data.details
   }

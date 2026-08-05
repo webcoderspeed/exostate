@@ -1,0 +1,75 @@
+version: 2
+
+updates:
+  # ── npm dependencies ─────────────────────────────────────────────
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: Asia/Kolkata
+    open-pull-requests-limit: 10
+    # Group non-major updates so the queue stays reviewable.
+    groups:
+      eslint-and-plugins:
+        patterns:
+          - 'eslint*'
+          - '@eslint/*'
+          - 'typescript-eslint'
+          - '@typescript-eslint/*'
+          - 'eslint-plugin-*'
+          - 'eslint-config-*'
+      testing:
+        patterns:
+          - 'vitest'
+          - '@vitest/*'
+          - 'jsdom'
+          - '@testing-library/*'
+          - 'fast-check'
+      typescript:
+        patterns:
+          - 'typescript'
+          - '@types/*'
+      frameworks:
+        patterns:
+          - 'react'
+          - 'react-dom'
+          - 'vue'
+          - 'svelte'
+          - 'solid-js'
+    labels:
+      - 'dependencies'
+      - 'automated'
+    commit-message:
+      prefix: 'chore'
+      prefix-development: 'chore'
+      include: scope
+    # Framework majors change peer-dependency semantics — review by hand.
+    ignore:
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'react'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'vue'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'svelte'
+        update-types: ['version-update:semver-major']
+      - dependency-name: 'solid-js'
+        update-types: ['version-update:semver-major']
+
+  # ── GitHub Actions ────────────────────────────────────────────────
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '09:00'
+      timezone: Asia/Kolkata
+    open-pull-requests-limit: 5
+    labels:
+      - 'github-actions'
+      - 'automated'
+    commit-message:
+      prefix: 'ci'
+      include: scope

@@ -1,0 +1,261 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main, develop]
+  pull_request:
+    branches: [master, main, develop]
+
+# PRs: cancel the old run when new commits arrive (saves CI minutes).
+# Default-branch pushes: never cancel — the release job lives in this run,
+# and cancelling it mid-flight would abort a release in progress.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  quality:
+    name: Quality (lint · typecheck)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint:check
+
+      - name: Type check
+        run: npm run typecheck
+
+  # Vitest 4 declares engines ^20 || ^22 || >=24 (its rolldown dependency
+  # imports `styleText` from node:util, added in Node 20.12), so the unit
+  # suite cannot run on Node 18. The package itself still supports Node 18 —
+  # that is verified against the built artifact in the `node18-compat` job.
+  test:
+    name: Test (Node ${{ matrix.node-version }})
+    runs-on: ubuntu-latest
+    needs: quality
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['20', '22']
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+  build:
+    name: Build & verify package
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      # Every subpath advertised in package.json "exports" must exist, or
+      # consumers get a bare ERR_MODULE_NOT_FOUND at import time.
+      - name: Verify every exported entry point exists
+        run: |
+          for f in \
+            dist/index.js dist/index.d.ts \
+            dist/react/index.js dist/react/index.d.ts \
+            dist/react/query.js dist/react/query.d.ts \
+            dist/node/index.js dist/node/index.d.ts \
+            dist/vue/index.js dist/vue/index.d.ts \
+            dist/svelte/index.js dist/svelte/index.d.ts \
+            dist/solid/index.js dist/solid/index.d.ts ; do
+            test -f "$f" || { echo "missing: $f"; exit 1; }
+          done
+          echo "All exported entry points present"
+
+      # Guards the browser build: a node: builtin reachable from the core
+      # entry breaks bundlers that cannot polyfill it.
+      - name: Assert core entry is browser-safe
+        run: |
+          if grep -rlE "from \"node:|require\(['\"]node:" dist --include="*.js" \
+             | grep -v '^dist/node/'; then
+            echo "A node: builtin is reachable outside dist/node/ — core must stay browser-safe"
+            exit 1
+          fi
+          echo "Core entry is free of node: builtins"
+
+      - name: Smoke test published ESM
+        run: |
+          node --input-type=module -e "
+            import { createStore, QueryClient } from './dist/index.js';
+            const s = createStore({ n: 0 });
+            s.patch({ n: 5 });
+            if (s.read().n !== 5) throw new Error('store broken');
+            const c = new QueryClient();
+            const d = await c.fetchQuery({ queryKey: ['x'], queryFn: async () => 42 });
+            if (d !== 42) throw new Error('query broken');
+            await import('./dist/node/index.js');
+            console.log('ESM smoke test passed');
+          "
+
+      - name: Upload dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 3
+
+      # --pack-destination does not create the directory itself.
+      - name: Pack the publishable tarball
+        run: mkdir -p pack && npm pack --pack-destination ./pack
+
+      - name: Upload package tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-tarball
+          path: pack/*.tgz
+          retention-days: 3
+
+  # package.json advertises engines.node >= 18, so that claim needs a real
+  # test. The dev toolchain cannot run on Node 18, but the *published* output
+  # can — so install the packed tarball into a clean project and import it by
+  # bare specifier. That exercises the exports map and the "type": "module"
+  # resolution exactly as a consumer would, rather than poking at dist/ files
+  # directly (which Node parses as CommonJS without the package manifest).
+  node18-compat:
+    name: Node 18 runtime compatibility
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Download package tarball
+        uses: actions/download-artifact@v4
+        with:
+          name: package-tarball
+          path: pack
+
+      - name: Install the tarball into a clean consumer project
+        run: |
+          mkdir -p /tmp/consumer
+          cd /tmp/consumer
+          npm init -y > /dev/null
+          npm pkg set type=module
+          npm install "$GITHUB_WORKSPACE"/pack/*.tgz
+          echo "Installed:"
+          node -e "console.log(require('exostate/package.json').version)"
+
+      - name: Exercise the installed package on Node 18
+        working-directory: /tmp/consumer
+        run: |
+          node --input-type=module -e "
+            import { createStore, QueryClient, combineStores, computed, shallow } from 'exostate';
+
+            const store = createStore({ n: 0, label: 'a' });
+            store.patch({ n: 5 });
+            store.update((s, by) => ({ ...s, n: s.n + by }), 3);
+            if (store.read().n !== 8) throw new Error('store broken on Node 18');
+
+            const doubled = computed(store, s => s.n * 2);
+            if (doubled.read() !== 16) throw new Error('computed broken on Node 18');
+
+            const combined = combineStores({ store });
+            if (combined.read().store.n !== 8) throw new Error('combine broken on Node 18');
+
+            if (!shallow({ a: 1 }, { a: 1 })) throw new Error('shallow broken on Node 18');
+
+            // Exercises AbortController + queueMicrotask, the newest runtime
+            // APIs the package touches.
+            const client = new QueryClient();
+            const data = await client.fetchQuery({ queryKey: ['x'], queryFn: async () => 42 });
+            if (data !== 42) throw new Error('query broken on Node 18');
+            client.clear();
+
+            const batched = createStore({ n: 0 }, { notify: 'microtask' });
+            let notifications = 0;
+            batched.subscribe(s => s.n, () => { notifications++; });
+            batched.patch({ n: 1 });
+            batched.patch({ n: 2 });
+            await Promise.resolve();
+            if (notifications !== 1) throw new Error('microtask batching broken on Node 18');
+
+            // Subpath exports must resolve too.
+            const { persistFs } = await import('exostate/node');
+            if (typeof persistFs !== 'function') throw new Error('exostate/node broken on Node 18');
+
+            console.log('Node 18 compatibility verified');
+          "
+
+  release:
+    name: Semantic Release
+    runs-on: ubuntu-latest
+    needs: [test, build, node18-compat]
+    if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') && github.event_name == 'push'
+    permissions:
+      contents: write # push release tag + chore(release) commit
+      issues: write # comment on released issues
+      pull-requests: write # comment on released PRs
+      id-token: write # npm provenance attestation
+
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      # semantic-release refuses to publish when local HEAD is behind origin.
+      # Fast-forwarding here absorbs any commit that landed after github.sha
+      # was captured (bots, rapid successive pushes).
+      - name: Sync with remote
+        run: git fetch origin && git reset --hard origin/${{ github.ref_name }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
+        run: npx --yes -p semantic-release@25 -p @semantic-release/changelog@6 -p @semantic-release/git@10 -p conventional-changelog-conventionalcommits@8 semantic-release

@@ -1,0 +1,26 @@
+name: 📚 Documentation
+description: Report unclear, missing, or incorrect documentation
+title: '[Docs]: '
+labels: ['documentation', 'good first issue']
+body:
+  - type: input
+    id: location
+    attributes:
+      label: Where?
+      description: README section, JSDoc on a specific export, or an example file.
+      placeholder: README → "Query layer" section
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong or missing?
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested wording
+      description: A concrete replacement is welcome but not required.

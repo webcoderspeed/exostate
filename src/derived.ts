@@ -1,5 +1,5 @@
-import { Selector, Subscriber, Unsubscribe, SubscribeOptions, DeepReadonly } from "./types"
-import { Store } from "./store"
+import { Selector, Subscriber, Unsubscribe, SubscribeOptions, DeepReadonly } from "./types.js"
+import { Store } from "./store.js"
 
 export interface Derived<R> {
   read(): R
