@@ -226,7 +226,7 @@ jobs:
       contents: write # push release tag + chore(release) commit
       issues: write # comment on released issues
       pull-requests: write # comment on released PRs
-      id-token: write # npm provenance attestation
+      id-token: write # npm trusted publishing (OIDC) + provenance attestation
 
     steps:
       - name: Checkout (full history)
@@ -239,7 +239,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          registry-url: https://registry.npmjs.org
           cache: npm
+
+      # Trusted publishing (OIDC) requires npm >= 11.5.1. Node 22 ships npm
+      # 10.x, which fails the token exchange with a misleading 404.
+      - name: Upgrade npm for trusted publishing
+        run: npm install -g npm@latest
 
       # semantic-release refuses to publish when local HEAD is behind origin.
       # Fast-forwarding here absorbs any commit that landed after github.sha
@@ -253,9 +259,12 @@ jobs:
       - name: Build
         run: npm run build
 
+      # No NPM_TOKEN: publishing authenticates via OIDC trusted publishing.
+      # This requires a trusted publisher for `exostate` on npmjs.com pointing
+      # at this repository and workflow file; without it the token exchange
+      # fails with "404 ... package not found".
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
         run: npx --yes -p semantic-release@25 -p @semantic-release/changelog@6 -p @semantic-release/git@10 -p conventional-changelog-conventionalcommits@8 semantic-release
