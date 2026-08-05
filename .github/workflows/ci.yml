@@ -133,10 +133,23 @@ jobs:
           path: dist/
           retention-days: 3
 
+      # --pack-destination does not create the directory itself.
+      - name: Pack the publishable tarball
+        run: mkdir -p pack && npm pack --pack-destination ./pack
+
+      - name: Upload package tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-tarball
+          path: pack/*.tgz
+          retention-days: 3
+
   # package.json advertises engines.node >= 18, so that claim needs a real
   # test. The dev toolchain cannot run on Node 18, but the *published* output
-  # can — so exercise the built artifact directly, with no dependencies
-  # installed at all.
+  # can — so install the packed tarball into a clean project and import it by
+  # bare specifier. That exercises the exports map and the "type": "module"
+  # resolution exactly as a consumer would, rather than poking at dist/ files
+  # directly (which Node parses as CommonJS without the package manifest).
   node18-compat:
     name: Node 18 runtime compatibility
     runs-on: ubuntu-latest
@@ -147,16 +160,27 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Download built package
+      - name: Download package tarball
         uses: actions/download-artifact@v4
         with:
-          name: dist
-          path: dist
+          name: package-tarball
+          path: pack
 
-      - name: Exercise the built package on Node 18
+      - name: Install the tarball into a clean consumer project
+        run: |
+          mkdir -p /tmp/consumer
+          cd /tmp/consumer
+          npm init -y > /dev/null
+          npm pkg set type=module
+          npm install "$GITHUB_WORKSPACE"/pack/*.tgz
+          echo "Installed:"
+          node -e "console.log(require('exostate/package.json').version)"
+
+      - name: Exercise the installed package on Node 18
+        working-directory: /tmp/consumer
         run: |
           node --input-type=module -e "
-            import { createStore, QueryClient, combineStores, computed, shallow } from './dist/index.js';
+            import { createStore, QueryClient, combineStores, computed, shallow } from 'exostate';
 
             const store = createStore({ n: 0, label: 'a' });
             store.patch({ n: 5 });
@@ -186,7 +210,10 @@ jobs:
             await Promise.resolve();
             if (notifications !== 1) throw new Error('microtask batching broken on Node 18');
 
-            await import('./dist/node/index.js');
+            // Subpath exports must resolve too.
+            const { persistFs } = await import('exostate/node');
+            if (typeof persistFs !== 'function') throw new Error('exostate/node broken on Node 18');
+
             console.log('Node 18 compatibility verified');
           "
 
