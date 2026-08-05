@@ -1,6 +1,6 @@
 {
   "name": "exostate",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Type-safe state management for React, Vue, Svelte, Solid and vanilla JS — with a built-in async query cache (stale-while-revalidate, request deduplication, retries, SSR hydration), plugins, time-travel history, persistence and transactions. A Zustand + TanStack Query alternative in one dependency-free package.",
   "type": "module",
   "main": "./dist/index.js",
