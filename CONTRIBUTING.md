@@ -23,7 +23,14 @@ npm install
 npm run validate   # build + typecheck + lint + tests
 ```
 
-Node 18 or newer is required.
+**Node 20 or newer is required for development.** Vitest 4 declares
+`engines: ^20 || ^22 || >=24`, so the test suite cannot run on Node 18.
+
+The *published package* still supports Node 18 (`engines.node: >=18`) — its
+source uses nothing newer than ES2020. CI proves this in the
+`node18-compat` job, which runs the built artifact on Node 18 with no
+dependencies installed. If you add a runtime API newer than ES2020, that job
+will fail; either drop the API or raise `engines.node` deliberately.
 
 ## Project layout
 

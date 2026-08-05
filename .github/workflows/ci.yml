@@ -36,6 +36,10 @@ jobs:
       - name: Type check
         run: npm run typecheck
 
+  # Vitest 4 declares engines ^20 || ^22 || >=24 (its rolldown dependency
+  # imports `styleText` from node:util, added in Node 20.12), so the unit
+  # suite cannot run on Node 18. The package itself still supports Node 18 —
+  # that is verified against the built artifact in the `node18-compat` job.
   test:
     name: Test (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
@@ -43,7 +47,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: ['18', '20', '22']
+        node-version: ['20', '22']
 
     steps:
       - name: Checkout
@@ -129,10 +133,67 @@ jobs:
           path: dist/
           retention-days: 3
 
+  # package.json advertises engines.node >= 18, so that claim needs a real
+  # test. The dev toolchain cannot run on Node 18, but the *published* output
+  # can — so exercise the built artifact directly, with no dependencies
+  # installed at all.
+  node18-compat:
+    name: Node 18 runtime compatibility
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Download built package
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Exercise the built package on Node 18
+        run: |
+          node --input-type=module -e "
+            import { createStore, QueryClient, combineStores, computed, shallow } from './dist/index.js';
+
+            const store = createStore({ n: 0, label: 'a' });
+            store.patch({ n: 5 });
+            store.update((s, by) => ({ ...s, n: s.n + by }), 3);
+            if (store.read().n !== 8) throw new Error('store broken on Node 18');
+
+            const doubled = computed(store, s => s.n * 2);
+            if (doubled.read() !== 16) throw new Error('computed broken on Node 18');
+
+            const combined = combineStores({ store });
+            if (combined.read().store.n !== 8) throw new Error('combine broken on Node 18');
+
+            if (!shallow({ a: 1 }, { a: 1 })) throw new Error('shallow broken on Node 18');
+
+            // Exercises AbortController + queueMicrotask, the newest runtime
+            // APIs the package touches.
+            const client = new QueryClient();
+            const data = await client.fetchQuery({ queryKey: ['x'], queryFn: async () => 42 });
+            if (data !== 42) throw new Error('query broken on Node 18');
+            client.clear();
+
+            const batched = createStore({ n: 0 }, { notify: 'microtask' });
+            let notifications = 0;
+            batched.subscribe(s => s.n, () => { notifications++; });
+            batched.patch({ n: 1 });
+            batched.patch({ n: 2 });
+            await Promise.resolve();
+            if (notifications !== 1) throw new Error('microtask batching broken on Node 18');
+
+            await import('./dist/node/index.js');
+            console.log('Node 18 compatibility verified');
+          "
+
   release:
     name: Semantic Release
     runs-on: ubuntu-latest
-    needs: [test, build]
+    needs: [test, build, node18-compat]
     if: (github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main') && github.event_name == 'push'
     permissions:
       contents: write # push release tag + chore(release) commit

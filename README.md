@@ -245,7 +245,9 @@ Framework packages are **optional peer dependencies** — install only what you 
 | Solid signals | `exostate/solid` | `solid-js >= 1` |
 | Filesystem persistence | `exostate/node` | Node >= 18 |
 
-Requires TypeScript 5.0+ for the bundled types. Node 18+ for the runtime.
+Requires TypeScript 5.0+ for the bundled types. Runs on Node 18+ — verified in
+CI against the built package on Node 18 itself. (Contributing to the repo needs
+Node 20+, since the test toolchain does.)
 
 ---
 
