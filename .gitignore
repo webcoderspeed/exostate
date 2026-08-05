@@ -12,3 +12,7 @@ coverage/
 .vscode/
 .idea/
 
+
+.size/
+release/
+coverage/

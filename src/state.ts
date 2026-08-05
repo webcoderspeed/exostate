@@ -1,4 +1,4 @@
-import { DeepReadonly } from "./types"
+import { DeepReadonly } from "./types.js"
 
 export interface State<T> {
   readonly version: number

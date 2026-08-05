@@ -15,6 +15,23 @@ module.exports = [
       parserOptions: {
         project: './tsconfig.json',
         tsconfigRootDir: __dirname
+      },
+      globals: {
+        console: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        queueMicrotask: 'readonly',
+        AbortController: 'readonly',
+        AbortSignal: 'readonly',
+        globalThis: 'readonly',
+        indexedDB: 'readonly',
+        IDBDatabase: 'readonly',
+        IDBRequest: 'readonly',
+        window: 'readonly',
+        document: 'readonly',
+        navigator: 'readonly'
       }
     },
     plugins: {

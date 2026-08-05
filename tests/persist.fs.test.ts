@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest"
 import { createStore } from "../src"
-import { persistFs } from "../src"
+import { persistFs } from "../src/node/index.js"
 import { promises as fs } from "node:fs"
 import os from "node:os"
 import path from "node:path"

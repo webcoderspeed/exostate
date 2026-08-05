@@ -1,5 +1,5 @@
-import { DeepReadonly, Unsubscribe } from "./types"
-import { Store } from "./store"
+import { DeepReadonly, Unsubscribe } from "./types.js"
+import { Store } from "./store.js"
 
 export interface History<T> {
   canUndo(): boolean
@@ -50,8 +50,8 @@ export function createHistory<T>(store: Store<T>, options?: HistoryOptions) {
       idx -= 1
       const state = items[idx]
       suppress = true
-      store.set(state as unknown as T)
-      suppress = false
+      try { store.set(state as unknown as T) }
+      finally { suppress = false }
       return store.read()
     },
     redo() {
@@ -59,8 +59,8 @@ export function createHistory<T>(store: Store<T>, options?: HistoryOptions) {
       idx += 1
       const state = items[idx]
       suppress = true
-      store.set(state as unknown as T)
-      suppress = false
+      try { store.set(state as unknown as T) }
+      finally { suppress = false }
       return store.read()
     },
     record(state?: DeepReadonly<T>) {
@@ -85,8 +85,8 @@ export function createHistory<T>(store: Store<T>, options?: HistoryOptions) {
       idx = index
       const state = items[idx]
       suppress = true
-      store.set(state as unknown as T)
-      suppress = false
+      try { store.set(state as unknown as T) }
+      finally { suppress = false }
       return store.read()
     },
   }

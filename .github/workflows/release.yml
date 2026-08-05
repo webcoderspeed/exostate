@@ -1,0 +1,48 @@
+name: Release (manual fallback)
+
+# The primary release path is the `release` job inside ci.yml.
+# This workflow is a manual escape hatch — use it to cut a release without
+# pushing a new commit (e.g. after fixing a broken NPM_TOKEN, or recovering
+# from a release that failed mid-flight).
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false # never cancel an in-flight release — queue instead
+
+jobs:
+  release:
+    name: Semantic Release (manual)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      id-token: write
+
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
+        run: npx --yes -p semantic-release@25 -p @semantic-release/changelog@6 -p @semantic-release/git@10 -p conventional-changelog-conventionalcommits@8 semantic-release

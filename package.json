@@ -1,7 +1,7 @@
 {
   "name": "exostate",
   "version": "1.0.0",
-  "description": "Next-generation, fully type-safe state management for frontend and backend.",
+  "description": "Type-safe state management for React, Vue, Svelte, Solid and vanilla JS — with a built-in async query cache (stale-while-revalidate, request deduplication, retries, SSR hydration), plugins, time-travel history, persistence and transactions. A Zustand + TanStack Query alternative in one dependency-free package.",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -14,50 +14,178 @@
     "./react": {
       "types": "./dist/react/index.d.ts",
       "default": "./dist/react/index.js"
-    }
+    },
+    "./react/query": {
+      "types": "./dist/react/query.d.ts",
+      "default": "./dist/react/query.js"
+    },
+    "./node": {
+      "types": "./dist/node/index.d.ts",
+      "default": "./dist/node/index.js"
+    },
+    "./vue": {
+      "types": "./dist/vue/index.d.ts",
+      "default": "./dist/vue/index.js"
+    },
+    "./svelte": {
+      "types": "./dist/svelte/index.d.ts",
+      "default": "./dist/svelte/index.js"
+    },
+    "./solid": {
+      "types": "./dist/solid/index.d.ts",
+      "default": "./dist/solid/index.js"
+    },
+    "./package.json": "./package.json"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "tsc -p ./tsconfig.json",
-    "typecheck": "tsc -p ./tsconfig.json --noEmit",
+    "build:watch": "tsc -p ./tsconfig.json --watch",
     "clean": "rm -rf dist",
-    "prepublishOnly": "npm run clean && npm run build && npm run typecheck",
+    "typecheck": "tsc -p ./tsconfig.json --noEmit",
     "lint": "eslint . --ext .ts --max-warnings=0",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "lint:check": "eslint . --ext .ts --max-warnings=0",
     "test": "vitest --run --environment jsdom",
-    "bench": "node benchmarks/index.mjs"
+    "test:watch": "vitest --environment jsdom",
+    "test:coverage": "vitest --run --environment jsdom --coverage",
+    "test:ci": "vitest --run --environment jsdom --coverage",
+    "check": "npm run typecheck && npm run lint:check",
+    "ci": "npm run typecheck && npm run lint:check && npm run test:ci",
+    "validate": "npm run clean && npm run build && npm run typecheck && npm run lint:check && npm run test",
+    "size": "npm run build && node scripts/bundle-for-size.mjs && size-limit",
+    "bench": "node benchmarks/index.mjs",
+    "bench:compare": "npm run build && node benchmarks/comparison.mjs",
+    "prepublishOnly": "npm run validate"
   },
   "sideEffects": false,
   "keywords": [
     "state-management",
+    "state",
+    "store",
     "typescript",
-    "backend",
-    "frontend",
+    "typescript-state-management",
+    "react",
+    "react-state-management",
+    "react-store",
+    "react-hooks",
+    "usesyncexternalstore",
+    "vue",
+    "vue-state-management",
+    "svelte",
+    "svelte-store",
+    "solid",
+    "solid-js",
+    "vanilla-js",
+    "framework-agnostic",
+    "zustand-alternative",
+    "redux-alternative",
+    "jotai-alternative",
+    "nanostores-alternative",
+    "valtio-alternative",
+    "mobx-alternative",
+    "tanstack-query-alternative",
+    "react-query-alternative",
+    "swr-alternative",
+    "query",
+    "query-cache",
+    "data-fetching",
+    "async-state",
+    "server-state",
+    "stale-while-revalidate",
+    "request-deduplication",
+    "optimistic-updates",
+    "mutations",
+    "refetch",
+    "polling",
+    "infinite-cache",
+    "garbage-collection",
+    "ssr",
+    "server-side-rendering",
+    "hydration",
+    "dehydrate",
+    "nextjs",
+    "nuxt",
+    "sveltekit",
     "immutable",
-    "generic"
+    "immutability",
+    "selectors",
+    "derived-state",
+    "computed",
+    "reactive",
+    "reactivity",
+    "middleware",
+    "plugins",
+    "devtools",
+    "redux-devtools",
+    "time-travel",
+    "undo-redo",
+    "history",
+    "persistence",
+    "localstorage",
+    "indexeddb",
+    "transactions",
+    "event-sourcing",
+    "observable",
+    "atomic-state",
+    "fine-grained-reactivity",
+    "zero-dependencies",
+    "tree-shakeable",
+    "tiny",
+    "performance",
+    "backend",
+    "nodejs"
   ],
-  "author": "webcoderspeed",
+  "author": {
+    "name": "Sanjeev Sharma",
+    "email": "webcoderspeed@gmail.com",
+    "url": "https://github.com/webcoderspeed"
+  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/webcoderspeed/exostate.git"
+    "url": "git+https://github.com/webcoderspeed/exostate.git"
   },
   "bugs": {
     "url": "https://github.com/webcoderspeed/exostate/issues"
   },
   "homepage": "https://github.com/webcoderspeed/exostate#readme",
-  "funding": {
-    "type": "github",
-    "url": "https://github.com/sponsors/webcoderspeed"
-  },
+  "funding": [
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/webcoderspeed"
+    }
+  ],
   "license": "MIT",
   "engines": {
     "node": ">=18"
   },
   "peerDependencies": {
-    "react": ">=18"
+    "react": ">=18",
+    "solid-js": ">=1",
+    "svelte": ">=4",
+    "vue": ">=3"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    },
+    "svelte": {
+      "optional": true
+    },
+    "solid-js": {
+      "optional": true
+    }
   },
   "devDependencies": {
+    "@size-limit/file": "^13.0.3",
     "@testing-library/react": "^16.0.0",
     "@types/node": "^25.0.3",
     "@types/react": "^18.3.12",
@@ -69,9 +197,55 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "redux": "^5.0.1",
+    "size-limit": "^12.1.0",
+    "solid-js": "^1.9.14",
+    "svelte": "^5.56.8",
+    "tinybench": "^6.0.0",
     "vitest": "^4.0.16",
+    "vue": "^3.5.41",
     "zod": "^4.2.1",
-    "zustand": "^5.0.9",
-    "tinybench": "^6.0.0"
-  }
+    "zustand": "^5.0.9"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "size-limit": [
+    {
+      "name": "createStore only",
+      "path": ".size/store-only.js",
+      "limit": "2 KB",
+      "gzip": true
+    },
+    {
+      "name": "store + computed + persist + history",
+      "path": ".size/store-plus.js",
+      "limit": "3 KB",
+      "gzip": true
+    },
+    {
+      "name": "query layer",
+      "path": ".size/query.js",
+      "limit": "7 KB",
+      "gzip": true
+    },
+    {
+      "name": "react adapter",
+      "path": ".size/react.js",
+      "limit": "3 KB",
+      "gzip": true
+    },
+    {
+      "name": "react query hooks",
+      "path": ".size/react-query.js",
+      "limit": "8 KB",
+      "gzip": true
+    },
+    {
+      "name": "entire library",
+      "path": ".size/everything.js",
+      "limit": "16 KB",
+      "gzip": true
+    }
+  ]
 }

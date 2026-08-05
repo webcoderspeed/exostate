@@ -1,4 +1,4 @@
-import { Middleware } from "./middleware"
+import { Middleware } from "./middleware.js"
 
 export interface DevtoolsConnection {
   init(state: unknown): void

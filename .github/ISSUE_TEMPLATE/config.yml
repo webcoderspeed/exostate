@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Discussions
+    url: https://github.com/webcoderspeed/exostate/discussions
+    about: Ask questions, share patterns, and propose ideas
+  - name: 📖 Documentation
+    url: https://github.com/webcoderspeed/exostate#readme
+    about: Full API reference, framework guides, and examples
+  - name: 🔍 Search existing issues
+    url: https://github.com/webcoderspeed/exostate/issues?q=is%3Aissue
+    about: Someone may have already reported this
+  - name: 🔐 Report a security vulnerability
+    url: https://github.com/webcoderspeed/exostate/security/advisories/new
+    about: Please report security issues privately, not as a public issue
